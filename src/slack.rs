@@ -1,20 +1,31 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+/// Slack form message: as documented at:
+/// https://api.slack.com/interactivity/slash-commands#app_command_handling
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SlackReceivedForm {
+pub struct SlackReceivedCommand {
   pub token: String,
   pub text: String,
+  pub team_id: Option<String>,
+  pub team_domain: Option<String>,
+  pub enterprise_id: Option<String>,
+  pub enterprise_name: Option<String>,
+  pub channel_id: Option<String>,
+  pub channel_name: Option<String>,
+  pub user_id: Option<String>,
   pub user_name: String,
-  pub team_id: String,
-  pub team_domain: String,
-  pub enterprise_id: String,
-  pub enterprise_name: String,
-  pub channel_id: String,
-  pub channel_name: String,
-  pub user_id: String,
-  pub command: String,
-  pub response_url: String,
+  pub command: Option<String>,
+  pub response_url: Option<String>,
+  pub trigger_id: Option<String>,
+  pub api_app_id: Option<String>,
+}
+
+///Slack Command Error HttpResponse
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SlackCommandErrorResponse {
+  pub response_type: String,
+  pub text: String,
 }
 
 ///Attachment is the internal structure that contains the information inside a @SlackCommandResponse

@@ -10,7 +10,7 @@ mod slack;
 use slack::*;
 
 fn init_logger() {
-    const DEFAULT_LOG: &str = "actix_web=error,tile_slack=info";
+    const DEFAULT_LOG: &str = "actix_web=error,tile_slack=debug";
 
     let log_setting = match std::env::var("RUST_LOG") {
         Ok(ls) => ls,
@@ -24,7 +24,7 @@ fn init_logger() {
 }
 
 #[post("/slack")]
-async fn handle_slack(from_slack: web::Form<SlackReceivedForm>) -> impl Responder {
+async fn handle_slack(from_slack: web::Form<SlackReceivedCommand>) -> impl Responder {
     debug!("{:?}", from_slack);
 
     let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
@@ -36,9 +36,11 @@ async fn handle_slack(from_slack: web::Form<SlackReceivedForm>) -> impl Responde
         response_type: "in_channel".to_string(),
         attachments: vec![Attachment {
             author_name: from_slack.user_name.clone(),
-            fallback: format!("\"{}\"", from_slack.text),
+            fallback: format!("{}", from_slack.text),
             color: "#36a64f".to_string(),
-            image_url: "".to_string(),
+            image_url:
+                "https://www.tegeltjes.com/Files/3/8000/8404/ProductPhotos/Large/1052079945.jpg"
+                    .to_string(),
             ts: timestamp,
         }],
     };
@@ -79,7 +81,7 @@ mod tests {
     async fn test_call_slack_ok() -> Result<(), Error> {
         let app = test::init_service(App::new().service(handle_slack)).await;
 
-        let form_data = Form(SlackReceivedForm {
+        let form_data = Form(SlackReceivedCommand {
             token: "mysecrettoken".to_string(),
             text: "my wisdown for the tile".to_string(),
             user_name: "owarnier".to_string(),
@@ -92,6 +94,8 @@ mod tests {
             user_id: "U2147483697".to_string(),
             command: "/tegeltje".to_string(),
             response_url: "https://hooks.slack.com/commands/1234/5678".to_string(),
+            api_app_id: "myappid".to_string(),
+            trigger_id: "triggerid".to_string(),
         });
 
         let req = test::TestRequest::post()
