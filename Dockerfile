@@ -1,34 +1,41 @@
-# syntax=docker/dockerfile:1
+# ------------------------------------------------------------------------------
+# Cargo Build Stage
+# ------------------------------------------------------------------------------
 
-##
-## Build
-##
-FROM golang:1.16-buster AS build
+FROM rust:1.54-buster as cargo-build
 
-WORKDIR /
+RUN apt-get update
 
-COPY main.go ./
+WORKDIR /usr/src/forms
 
-RUN go build -o tile-slack ./main.go 
+COPY Cargo.toml Cargo.toml
 
-RUN pwd
+RUN mkdir src/
 
-RUN ls
+RUN echo "fn main() {println!(\"if you see this, the build broke\")}" > src/main.rs
 
-##
-## Deploy
-##
-FROM gcr.io/distroless/base-debian10
+COPY . .
 
-WORKDIR /
+RUN cargo build --release
 
-COPY --from=build /tile-slack /tile-slack
+# RUN cargo install --path .
 
-ENV PORT=5000
+# ------------------------------------------------------------------------------
+# Final Stage
+# ------------------------------------------------------------------------------
 
-EXPOSE 5000
+FROM debian:bullseye-slim
 
-USER nonroot:nonroot
+RUN apt-get update && rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT ["/tile-slack"]
+RUN addgroup --system -gid 1000 runtme
 
+RUN adduser --system --disabled-login --shell /bin/sh -uid 1001 --ingroup runtme runtme
+
+COPY --from=cargo-build /usr/src/forms/target/release/tile-slack /usr/local/bin/tile-slack
+
+RUN chown runtme:runtme /usr/local/bin/tile-slack
+
+USER runtme
+
+CMD ["tile-slack"]
