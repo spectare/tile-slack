@@ -26,7 +26,9 @@ RUN cargo build --release
 
 FROM debian:bullseye-slim
 
-RUN apt-get update && rm -rf /var/lib/apt/lists/*
+RUN apt-get update
+
+RUN  apt-get install  -y --no-install-recommends fontconfig
 
 RUN addgroup --system -gid 1000 runtme
 

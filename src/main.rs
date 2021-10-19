@@ -2,8 +2,10 @@ use actix_cors::Cors;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use futures::{future::ok, stream::once};
 use log::{debug, info};
+use serde::Deserialize;
 use std::env;
 use std::time::SystemTime;
+use urlencoding::encode;
 
 mod errors;
 mod slack;
@@ -26,36 +28,49 @@ fn init_logger() {
     debug!("Log set to {}", log_setting);
 }
 
+// Makes use of https://devcenter.heroku.com/articles/dyno-metadata
+// In order to get the exposed host name.
 #[post("/slack")]
 async fn handle_slack(from_slack: web::Form<SlackReceivedCommand>) -> impl Responder {
     debug!("{:?}", from_slack);
+    let host_name = match env::var("HEROKU_APP_NAME") {
+        Ok(name) => format!("{}.herokuapp.com", name),
+        Err(_) => format!(
+            "localhost:{}",
+            env::var("PORT").expect("PORT env var not found")
+        ), //Please enable runtime-dyno-metadata on HEROKU
+    };
 
     let timestamp = match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
         Ok(n) => n.as_secs(),
         Err(_) => panic!("SystemTime before UNIX EPOCH!"),
     };
 
+    let encoded_text = encode(&from_slack.text);
     let to_slack = SlackCommandResponse {
         response_type: "in_channel".to_string(),
         attachments: vec![Attachment {
             author_name: from_slack.user_name.clone(),
             fallback: format!("{}", from_slack.text),
             color: "#36a64f".to_string(),
-            image_url:
-                "https://www.tegeltjes.com/Files/3/8000/8404/ProductPhotos/Large/1052079945.jpg"
-                    .to_string(),
+            image_url: format!("https://{}/tegeltje?text={}", host_name, encoded_text),
             ts: timestamp,
         }],
     };
     HttpResponse::Ok().json(to_slack)
 }
 
+#[derive(Deserialize)]
+struct TileParams {
+    text: String,
+}
+
 #[get("/tegeltje")]
-async fn create_tile_image() -> impl Responder {
-    let body = tile::create_tile_image("hallo wereld".to_string())
+async fn create_tile_image(params: web::Query<TileParams>) -> impl Responder {
+    let body = tile::create_tile_image(params.text.clone())
         .await
         .expect("Cannot create Tile Image");
-    HttpResponse::Ok().content_type("image/jpg").body(body)
+    HttpResponse::Ok().content_type("image/jpeg").body(body)
 }
 
 #[actix_web::main]
