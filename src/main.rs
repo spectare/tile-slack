@@ -1,13 +1,16 @@
 use actix_cors::Cors;
-use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use futures::{future::ok, stream::once};
 use log::{debug, info};
 use std::env;
 use std::time::SystemTime;
 
 mod errors;
 mod slack;
+mod tile;
 
 use slack::*;
+use tile::TileError;
 
 fn init_logger() {
     const DEFAULT_LOG: &str = "actix_web=error,tile_slack=debug";
@@ -47,6 +50,14 @@ async fn handle_slack(from_slack: web::Form<SlackReceivedCommand>) -> impl Respo
     HttpResponse::Ok().json(to_slack)
 }
 
+#[get("/tegeltje")]
+async fn create_tile_image() -> impl Responder {
+    let body = tile::create_tile_image("hallo wereld".to_string())
+        .await
+        .expect("Cannot create Tile Image");
+    HttpResponse::Ok().content_type("image/jpg").body(body)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     init_logger();
@@ -63,7 +74,10 @@ async fn main() -> std::io::Result<()> {
             .supports_credentials()
             .max_age(3600);
 
-        App::new().wrap(cors).service(handle_slack)
+        App::new()
+            .wrap(cors)
+            .service(handle_slack)
+            .service(create_tile_image)
     })
     .bind(bind)?
     .run()
@@ -87,8 +101,8 @@ mod tests {
             user_name: "owarnier".to_string(),
             team_id: "T0001".to_string(),
             team_domain: "example".to_string(),
-            enterprise_id: "E0001".to_string(),
-            enterprise_name: "Globular%20Construct%20Inc".to_string(),
+            enterprise_id: Some("E0001".to_string()),
+            enterprise_name: Some("Globular%20Construct%20Inc".to_string()),
             channel_id: "2147483705".to_string(),
             channel_name: "test".to_string(),
             user_id: "U2147483697".to_string(),

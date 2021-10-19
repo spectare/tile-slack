@@ -7,18 +7,18 @@ use serde::Serialize;
 pub struct SlackReceivedCommand {
   pub token: String,
   pub text: String,
-  pub team_id: Option<String>,
-  pub team_domain: Option<String>,
+  pub team_id: String,
+  pub team_domain: String,
   pub enterprise_id: Option<String>,
   pub enterprise_name: Option<String>,
-  pub channel_id: Option<String>,
-  pub channel_name: Option<String>,
-  pub user_id: Option<String>,
+  pub channel_id: String,
+  pub channel_name: String,
+  pub user_id: String,
   pub user_name: String,
-  pub command: Option<String>,
-  pub response_url: Option<String>,
-  pub trigger_id: Option<String>,
-  pub api_app_id: Option<String>,
+  pub command: String,
+  pub response_url: String,
+  pub trigger_id: String,
+  pub api_app_id: String,
 }
 
 ///Slack Command Error HttpResponse
