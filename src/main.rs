@@ -70,7 +70,9 @@ async fn create_tile_image(params: web::Query<TileParams>) -> impl Responder {
     let body = tile::create_tile_image(params.text.clone())
         .await
         .expect("Cannot create Tile Image");
-    HttpResponse::Ok().content_type("image/jpeg").body(body)
+    HttpResponse::Ok()
+        .content_type("image/jpeg")
+        .body(web::Bytes::copy_from_slice(body.get_ref()))
 }
 
 #[actix_web::main]

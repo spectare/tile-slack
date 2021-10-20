@@ -1,10 +1,8 @@
-use actix_web::web;
 use artano::Annotation;
 use artano::Canvas;
 use artano::Position;
 use bytes::BufMut;
 use rusttype::Font;
-// use std::io::{BufWriter, Write};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -14,7 +12,7 @@ pub enum TileError {
   GenericTileError(String),
 }
 
-pub async fn create_tile_image(text: String) -> Result<web::Bytes, TileError> {
+pub async fn create_tile_image(text: String) -> Result<bytes::buf::Writer<Vec<u8>>, TileError> {
   let font_data: &[u8] =
     include_bytes!("../resources/Dancing_Script/static/DancingScript-Bold.ttf");
   let font: Font<'static> = Font::try_from_bytes(font_data).expect("Map bytes to Font failed");
@@ -36,6 +34,6 @@ pub async fn create_tile_image(text: String) -> Result<web::Bytes, TileError> {
   canvas
     .save_png(&mut buffer)
     .expect("Tried to store the image canvas in the buffer");
-  let web_bytes = web::Bytes::copy_from_slice(buffer.get_ref());
-  Ok(web_bytes)
+
+  Ok(buffer)
 }
